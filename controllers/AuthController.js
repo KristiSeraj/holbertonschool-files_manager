@@ -34,7 +34,7 @@ export const getDisconnect = async (req, res) => {
     return res.status(401).send({ error: 'Unauthorized' });
   }
   await redisClient.del(`auth_${xtoken}`);
-  return res.status(204);
+  return res.status(204).send({});
 };
 
 export const getMe = async (req, res) => {
