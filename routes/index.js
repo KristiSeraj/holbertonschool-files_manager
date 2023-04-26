@@ -1,6 +1,7 @@
 import { getStatus, getStats } from '../controllers/AppController';
 import postNew from '../controllers/UsersController';
 import { getConnect, getDisconnect, getMe } from '../controllers/AuthController';
+import postUpload from '../controllers/FilesController';
 
 const express = require('express');
 
@@ -14,5 +15,6 @@ router.post('/users', postNew);
 router.get('/connect', getConnect);
 router.get('/disconnect', getDisconnect);
 router.get('/users/me', getMe);
+router.post('/files', postUpload);
 
 export default router;
