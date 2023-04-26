@@ -11,14 +11,18 @@ export const getConnect = async (req, res) => {
   if (!authorization || !authorization.startsWith('Basic ')) {
     return res.status(401).send({ error: 'Unauthorized' });
   }
-  const credentials = Buffer.from(authorization.split(' ')[1], 'base64').toString();
-  const [email, password] = credentials.split(':');
+  try {
+    const credentials = Buffer.from(authorization.split(' ')[1], 'base64').toString();
+    const [email, password] = credentials.split(':');
 
-  const user = await dbclient.db.collection('users').findOne({ email, password: sha1(password) });
-  const uuid = uuidv4();
-  const authKey = `auth_${uuid}`;
-  await redisClient.set(authKey, user._id.toString(), 24 * 60 * 60);
-  return res.status(200).send({ token: uuid });
+    const user = await dbclient.db.collection('users').findOne({ email, password: sha1(password) });
+    const uuid = uuidv4();
+    const authKey = `auth_${uuid}`;
+    await redisClient.set(authKey, user._id.toString(), 24 * 60 * 60);
+    return res.status(200).send({ token: uuid });
+  } catch (error) {
+    return res.status(401).send({ error: 'Unauthorized' });
+  }
 };
 
 export const getDisconnect = async (req, res) => {
