@@ -26,7 +26,7 @@ const postUpload = async (req, res) => {
   if (!type || !fileTypes.includes(type)) return res.status(400).send({ error: 'Missing type' });
   if (!data && type !== 'folder') return res.status(400).send({ error: 'Missing data' });
   if (parentId) {
-    const fileByParentId = await dbclient.db.collection('files').findOne({ parentId });
+    const fileByParentId = await dbclient.db.collection('files').findOne({ _id: new ObjectId(parentId) });
     if (!fileByParentId) {
       return res.status(400).send({ error: 'Parent not found' });
     }
