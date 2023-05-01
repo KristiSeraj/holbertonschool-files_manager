@@ -132,11 +132,11 @@ export const getShow = async (req, res) => {
   if (!getUsr) {
     return res.status(401).send({ error: 'Unauthorized' });
   }
-  const usr = await dbclient.db.collection('users').findOne({ _id: new ObjectId(getUsr) });
+  const usr = await dbclient.db.collection('users').findOne({ _id: ObjectId(getUsr) });
   if (!usr) return res.status(401).send({ error: 'Unauthorized' });
 
   const { id } = req.params;
-  const file = await dbclient.db.collection('files').findOne({ userId: id });
+  const file = await dbclient.db.collection('files').findOne({ _id: ObjectId(id), userId: usr._id.toString() });
   if (!file) {
     return res.status(404).send({ error: 'Not found' });
   }
