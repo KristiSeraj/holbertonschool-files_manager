@@ -5,7 +5,7 @@ const { ObjectId } = require('mongodb');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 
-const postUpload = async (req, res) => {
+export const postUpload = async (req, res) => {
   const xtoken = req.headers['x-token'];
   const getUsr = await redisClient.get(`auth_${xtoken}`);
 
@@ -79,4 +79,75 @@ const postUpload = async (req, res) => {
   });
 };
 
-export default postUpload;
+export const getIndex = async (req, res) => {
+  const xtoken = req.headers['x-token'];
+  const getUsr = await redisClient.get(`auth_${xtoken}`);
+
+  const usr = await dbclient.db.collection('users').findOne({ _id: new ObjectId(getUsr) });
+  if (!usr) {
+    return res.status(401).send({ error: 'Unauthorized' });
+  }
+
+  let parentId = req.query.parentId || 0;
+
+  if (parentId !== 0) {
+    const fileByParentId = await dbclient.db.collection('files').findOne({ _id: new ObjectId(parentId) });
+    if (!fileByParentId) {
+      return res.status(401).send({ error: 'Unauthorized' });
+    }
+
+    parentId = new ObjectId(parentId);
+    const folder = await dbclient.db.collection('files').findOne({ _id: new ObjectId(parentId) });
+    if (!folder || folder.type !== 'folder') return res.status(201).send([]);
+  }
+
+  const page = req.query.page || 0;
+
+  const agg = { $and: [{ parentId }] };
+  let aggregationDate = [{ $match: agg }, { $skip: page * 20 }, { $limit: 20 }];
+  if (parentId === 0) {
+    aggregationDate = [{ $skip: page * 20 }, { $limit: 20 }];
+  }
+
+  const pageFiles = await dbclient.db.collection('files').aggregate(aggregationDate);
+  const files = [];
+
+ await pageFiles.forEach((file) => {
+    const fileObj = {
+      id: file._id,
+      userId: file.userId,
+      name: file.name,
+      type: file.type,
+      isPublic: file.isPublic,
+      parentId: file.parentId,
+    };
+    files.push(fileObj);
+  });
+
+  return res.status(200).send(files);
+};
+
+export const getShow = async (req, res) => {
+  const xtoken = req.headers['x-token'];
+  const getUsr = await redisClient.get(`auth_${xtoken}`);
+
+  const usr = await dbclient.db.collection('users').findOne({ _id: new ObjectId(getUsr) });
+  if (!usr) {
+    return res.status(401).send({ error: 'Unauthorized' });
+  }
+
+  const { id } = req.params;
+  const file = await dbclient.db.collection('files').findOne({ _id: new ObjectId(id) });
+  if (!file) {
+    return res.status(404).send({ error: 'Not found' });
+  }
+
+  return res.status(201).send({
+    id: file._id,
+    userId: file.userId,
+    name: file.name,
+    type: file.type,
+    isPublic: file.isPublic,
+    parentId: file.parentId,
+  });
+};
