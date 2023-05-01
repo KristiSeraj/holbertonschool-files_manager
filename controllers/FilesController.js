@@ -150,3 +150,59 @@ export const getShow = async (req, res) => {
     parentId: file.parentId,
   });
 };
+
+export const putPublish = async (req, res) => {
+  const xtoken = req.headers['x-token'];
+  const getUsr = await redisClient.get(`auth_${xtoken}`);
+  const id = req.params.id || '';
+
+  if (!getUsr) {
+    return res.status(401).send({ error: 'Unauthorized' });
+  }
+  const usr = await dbclient.db.collection('users').findOne({ _id: ObjectId(getUsr) });
+  if (!usr) return res.status(401).send({ error: 'Unauthorized' });
+
+  let file = await dbclient.db.collection('files').findOne({ _id: ObjectId(id), userId: usr._id.toString() });
+  if (!file) {
+    return res.status(404).send({ error: 'Not found' });
+  }
+  await dbclient.db.collection('files').updateOne({ _id: ObjectId(id), userId: usr._id.toString() }, { $set: { isPublic: true } });
+  file = await dbclient.db.collection('files').findOne({ _id: ObjectId(id), userId: usr._id.toString() });
+
+  return res.status(200).send({
+    id: file._id,
+    userId: file.userId,
+    name: file.name,
+    type: file.type,
+    isPublic: file.isPublic,
+    parentId: file.parentId,
+  });
+};
+
+export const putUnpublish = async (req, res) => {
+  const xtoken = req.headers['x-token'];
+  const getUsr = await redisClient.get(`auth_${xtoken}`);
+  const id = req.params.id || '';
+
+  if (!getUsr) {
+    return res.status(401).send({ error: 'Unauthorized' });
+  }
+  const usr = await dbclient.db.collection('users').findOne({ _id: ObjectId(getUsr) });
+  if (!usr) return res.status(401).send({ error: 'Unauthorized' });
+
+  let file = await dbclient.db.collection('files').findOne({ _id: ObjectId(id), userId: usr._id.toString() });
+  if (!file) {
+    return res.status(404).send({ error: 'Not found' });
+  }
+  await dbclient.db.collection('files').updateOne({ _id: ObjectId(id), userId: usr._id.toString() }, { $set: { isPublic: false } });
+  file = await dbclient.db.collection('files').findOne({ _id: ObjectId(id), userId: usr._id.toString() });
+
+  return res.status(200).send({
+    id: file._id,
+    userId: file.userId,
+    name: file.name,
+    type: file.type,
+    isPublic: file.isPublic,
+    parentId: file.parentId,
+  });
+};
