@@ -209,6 +209,8 @@ export const putUnpublish = async (req, res) => {
 };
 
 export const getFile = async (req, res) => {
+  const xtoken = req.headers['x-token'];
+  const getUsr = await redisClient.get(`auth_${xtoken}`);
   const id = req.params.id || '';
   const size = req.query.size || 0;
 
@@ -217,10 +219,16 @@ export const getFile = async (req, res) => {
 
   const { userId, type, isPublic } = file;
 
-  const usr = await dbclient.db.collection('users').findOne({ _id: ObjectId(userId) });
-  if (!usr) return res.status(401).send({ error: 'Unauthorized' });
+  let usr = null;
+  let owner = false;
+  if (getUsr) {
+    usr = await dbclient.db.collection('users').findOne({ _id: ObjectId(getUsr) });
+    if (usr) {
+      owner = usr._id.toString() === userId;
+    }
+  }
 
-  if ((!isPublic && !usr) || (usr && userId.toString() !== usr && !isPublic)) return res.status(404).send({ error: 'Not found' });
+  if (!isPublic && !owner) return res.status(404).send({ error: 'Not found' });
   if (type === 'folder') return res.status(400).send({ error: 'A folder doesn\'t have a content' });
 
   const path = size === 0 ? file.localPath : `${file.localPath}_${size}`;
