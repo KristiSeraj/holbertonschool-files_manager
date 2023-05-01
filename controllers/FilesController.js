@@ -131,8 +131,8 @@ export const getShow = async (req, res) => {
   const xtoken = req.headers['x-token'];
   const getUsr = await redisClient.get(`auth_${xtoken}`);
 
-  const usr = await dbclient.db.collection('users').findOne({ _id: new ObjectId(getUsr) });
-  if (!usr) {
+  // const usr = await dbclient.db.collection('users').findOne({ _id: new ObjectId(getUsr) });
+  if (!getUsr) {
     return res.status(401).send({ error: 'Unauthorized' });
   }
 
