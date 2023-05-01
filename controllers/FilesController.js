@@ -1,3 +1,4 @@
+import Queue from 'bull/lib/queue';
 import mime from 'mime-types';
 import dbclient from '../utils/db';
 import redisClient from '../utils/redis';
@@ -7,6 +8,7 @@ const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 
 export const postUpload = async (req, res) => {
+  const fileQ = new Queue('fileQ');
   const xtoken = req.headers['x-token'];
   const getUsr = await redisClient.get(`auth_${xtoken}`);
 
@@ -69,6 +71,10 @@ export const postUpload = async (req, res) => {
     isPublic: isPublic || false,
     parentId: parentId || 0,
     localPath: filePath,
+  });
+  fileQ.add({
+    userId: fileCreated.userId,
+    fileId: fileCreated._id,
   });
   return res.status(201).send({
     id: fileCreated.ops[0]._id,
