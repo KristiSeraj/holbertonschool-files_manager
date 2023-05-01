@@ -162,12 +162,12 @@ export const putPublish = async (req, res) => {
   const usr = await dbclient.db.collection('users').findOne({ _id: ObjectId(getUsr) });
   if (!usr) return res.status(401).send({ error: 'Unauthorized' });
 
-  let file = await dbclient.db.collection('files').findOne({ _id: ObjectId(id), userId: usr._id.toString() });
+  let file = await dbclient.db.collection('files').findOne({ _id: ObjectId(id), userId: usr._id });
   if (!file) {
     return res.status(404).send({ error: 'Not found' });
   }
-  await dbclient.db.collection('files').updateOne({ _id: ObjectId(id), userId: usr._id.toString() }, { $set: { isPublic: true } });
-  file = await dbclient.db.collection('files').findOne({ _id: ObjectId(id), userId: usr._id.toString() });
+  await dbclient.db.collection('files').updateOne({ _id: ObjectId(id), userId: usr._id }, { $set: { isPublic: true } });
+  file = await dbclient.db.collection('files').findOne({ _id: ObjectId(id), userId: usr._id });
 
   return res.status(200).send({
     id: file._id,
@@ -190,12 +190,12 @@ export const putUnpublish = async (req, res) => {
   const usr = await dbclient.db.collection('users').findOne({ _id: ObjectId(getUsr) });
   if (!usr) return res.status(401).send({ error: 'Unauthorized' });
 
-  let file = await dbclient.db.collection('files').findOne({ _id: ObjectId(id), userId: usr._id.toString() });
+  let file = await dbclient.db.collection('files').findOne({ _id: ObjectId(id), userId: usr._id });
   if (!file) {
     return res.status(404).send({ error: 'Not found' });
   }
   await dbclient.db.collection('files').updateOne({ _id: ObjectId(id), userId: usr._id.toString() }, { $set: { isPublic: false } });
-  file = await dbclient.db.collection('files').findOne({ _id: ObjectId(id), userId: usr._id.toString() });
+  file = await dbclient.db.collection('files').findOne({ _id: ObjectId(id), userId: usr._id });
 
   return res.status(200).send({
     id: file._id,
