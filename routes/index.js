@@ -7,6 +7,7 @@ import {
   getShow,
   putPublish,
   putUnpublish,
+  getFile,
 } from '../controllers/FilesController';
 
 const express = require('express');
@@ -26,5 +27,6 @@ router.get('/files/:id', getShow);
 router.get('/files', getIndex);
 router.put('/files/:id/publish', putPublish);
 router.put('/files/:id/unpublish', putUnpublish);
+router.get('/files/:id/data', getFile);
 
 export default router;

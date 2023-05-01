@@ -1,3 +1,4 @@
+import mime from 'mime-types';
 import dbclient from '../utils/db';
 import redisClient from '../utils/redis';
 
@@ -136,7 +137,7 @@ export const getShow = async (req, res) => {
   if (!usr) return res.status(401).send({ error: 'Unauthorized' });
 
   const { id } = req.params;
-  const file = await dbclient.db.collection('files').findOne({ _id: ObjectId(id), userId: usr._id.toString() });
+  const file = await dbclient.db.collection('files').findOne({ _id: ObjectId(id), userId: usr._id });
   if (!file) {
     return res.status(404).send({ error: 'Not found' });
   }
@@ -194,7 +195,7 @@ export const putUnpublish = async (req, res) => {
   if (!file) {
     return res.status(404).send({ error: 'Not found' });
   }
-  await dbclient.db.collection('files').updateOne({ _id: ObjectId(id), userId: usr._id.toString() }, { $set: { isPublic: false } });
+  await dbclient.db.collection('files').updateOne({ _id: ObjectId(id), userId: usr._id }, { $set: { isPublic: false } });
   file = await dbclient.db.collection('files').findOne({ _id: ObjectId(id), userId: usr._id });
 
   return res.status(200).send({
@@ -205,4 +206,31 @@ export const putUnpublish = async (req, res) => {
     isPublic: file.isPublic,
     parentId: file.parentId,
   });
+};
+
+export const getFile = async (req, res) => {
+  const id = req.params.id || '';
+  const size = req.query.size || 0;
+
+  const file = await dbclient.db.collection('files').findOne({ _id: ObjectId(id) });
+  if (!file) return res.status(404).send({ error: 'Not found' });
+
+  const { userId, type, isPublic } = file;
+
+  const usr = await dbclient.db.collection('users').findOne({ _id: ObjectId(userId) });
+  if (!usr) return res.status(401).send({ error: 'Unauthorized' });
+
+  if ((!isPublic && !usr) || (usr && userId.toString() !== usr && !isPublic)) return res.status(404).send({ error: 'Not found' });
+  if (type === 'folder') return res.status(400).send({ error: 'A folder doesn\'t have a content' });
+
+  const path = size === 0 ? file.localPath : `${file.localPath}_${size}`;
+
+  try {
+    const fileData = fs.readFileSync(path);
+    const mimeType = mime.contentType(file.name);
+    res.setHeader('Content-Type', mimeType);
+    return res.status(200).send(fileData);
+  } catch (error) {
+    return res.status(404).send({ error: 'Not found' });
+  }
 };
