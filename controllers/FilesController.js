@@ -138,12 +138,12 @@ export const getShow = async (req, res) => {
   if (!usr) return res.status(401).send({ error: 'Unauthorized' });
 
   const { id } = req.params;
-  const file = await dbclient.db.collection('files').findOne({ _id: new ObjectId(id), userId: usr._id });
+  const file = await dbclient.db.collection('files').findOne({ _id: new ObjectId(id), userId: usr._id.toString() });
   if (!file) {
     return res.status(404).send({ error: 'Not found' });
   }
 
-  return res.status(201).send({
+  return res.status(200).send({
     id: file._id,
     userId: file.userId,
     name: file.name,
