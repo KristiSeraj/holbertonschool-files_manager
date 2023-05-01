@@ -83,36 +83,34 @@ export const getIndex = async (req, res) => {
   const xtoken = req.headers['x-token'];
   const getUsr = await redisClient.get(`auth_${xtoken}`);
 
-  const usr = await dbclient.db.collection('users').findOne({ _id: new ObjectId(getUsr) });
-  if (!usr) {
+  if (!getUsr) {
     return res.status(401).send({ error: 'Unauthorized' });
   }
+  const usr = await dbclient.db.collection('users').findOne({ _id: ObjectId(getUsr) });
+  if (!usr) return res.status(401).send({ error: 'Unauthorized' });
 
   let parentId = req.query.parentId || 0;
-
+  if (parentId === 0) parentId = 0;
   if (parentId !== 0) {
-    const fileByParentId = await dbclient.db.collection('files').findOne({ _id: new ObjectId(parentId) });
-    if (!fileByParentId) {
-      return res.status(401).send({ error: 'Unauthorized' });
-    }
+    if (!parentId) return res.status(401).send({ error: 'Unauthorized' });
 
-    parentId = new ObjectId(parentId);
-    const folder = await dbclient.db.collection('files').findOne({ _id: new ObjectId(parentId) });
-    if (!folder || folder.type !== 'folder') return res.status(201).send([]);
+    const folder = await dbclient.db.collection('files').findOne({ _id: ObjectId(parentId) });
+
+    if (!folder || folder.type !== 'folder') return res.status(200).send([]);
   }
 
   const page = req.query.page || 0;
 
-  const agg = { $and: [{ parentId }] };
-  let aggregationDate = [{ $match: agg }, { $skip: page * 20 }, { $limit: 20 }];
+  const agg = { parentId };
+  let aggData = [{ $match: agg }, { $skip: page * 20 }, { $limit: 20 }];
   if (parentId === 0) {
-    aggregationDate = [{ $skip: page * 20 }, { $limit: 20 }];
+    aggData = [{ $skip: page * 20 }, { $limit: 20 }];
   }
 
-  const pageFiles = await dbclient.db.collection('files').aggregate(aggregationDate);
+  const pageFiles = await dbclient.db.collection('files').aggregate(aggData);
   const files = [];
 
- await pageFiles.forEach((file) => {
+  await pageFiles.forEach((file) => {
     const fileObj = {
       id: file._id,
       userId: file.userId,
